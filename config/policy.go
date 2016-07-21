@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/contiv/errored"
+	"github.com/contiv/volplugin/api/schema"
 	"github.com/contiv/volplugin/errors"
 	"github.com/coreos/etcd/client"
 	"golang.org/x/net/context"
@@ -47,10 +48,6 @@ func (c *Client) policy(name string) string {
 func (c *Client) PublishPolicy(name string, cfg *Policy) error {
 	cfg.Name = name
 
-	if err := cfg.Validate(); err != nil {
-		return err
-	}
-
 	value, err := json.Marshal(cfg)
 	if err != nil {
 		return err
@@ -86,6 +83,10 @@ func (c *Client) GetPolicy(name string) (*Policy, error) {
 		return nil, errors.EtcdToErrored(err)
 	}
 
+	if err := schema.ValidatePolicy([]byte(resp.Node.Value)); err != nil {
+		return nil, err
+	}
+
 	tc := NewPolicy()
 	if err := json.Unmarshal([]byte(resp.Node.Value), tc); err != nil {
 		return nil, err
@@ -93,8 +94,7 @@ func (c *Client) GetPolicy(name string) (*Policy, error) {
 
 	tc.Name = name
 
-	err = tc.Validate()
-	return tc, err
+	return tc, nil
 }
 
 // ListPolicies provides an array of strings corresponding to the name of each
@@ -115,28 +115,6 @@ func (c *Client) ListPolicies() ([]Policy, error) {
 	}
 
 	return policies, nil
-}
-
-// Validate ensures the structure of the policy is sane.
-func (cfg *Policy) Validate() error {
-	if cfg.FileSystems == nil {
-		cfg.FileSystems = defaultFilesystems
-	}
-
-	if cfg.Name == "" {
-		return errored.Errorf("Name is empty for policy")
-	}
-
-	if cfg.Backends.Mount == "" {
-		return errored.Errorf("Mount backend cannot be empty for policy %v", cfg)
-	}
-
-	size, err := cfg.CreateOptions.ActualSize()
-	if cfg.Backends.CRUD != "" && (size == 0 || err != nil) {
-		return errored.Errorf("Size set to zero for non-empty CRUD backend %v", cfg.Backends.CRUD).Combine(err)
-	}
-
-	return cfg.RuntimeOptions.Validate()
 }
 
 func (cfg *Policy) String() string {

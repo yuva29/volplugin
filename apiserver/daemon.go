@@ -14,6 +14,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/contiv/errored"
 	"github.com/contiv/volplugin/api"
+	"github.com/contiv/volplugin/api/schema"
 	"github.com/contiv/volplugin/config"
 	"github.com/contiv/volplugin/errors"
 	"github.com/contiv/volplugin/info"
@@ -195,9 +196,29 @@ func (d *DaemonConfig) handlePolicyUpload(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if err := schema.ValidatePolicy(data); err != nil {
+		api.RESTHTTPError(w, errors.JSONValidation.Combine(err))
+		return
+	}
+
 	policy := config.NewPolicy()
 	if err := json.Unmarshal(data, policy); err != nil {
 		api.RESTHTTPError(w, errors.UnmarshalPolicy.Combine(err))
+		return
+	}
+
+	// Validations that json schema did not take care
+	// Below initialization and check is done only during policy upload
+	// XXX: Check if there is a need for this during "GetPolicy" and "CreateVolume"
+	if policy.FileSystems == nil {
+		policy.FileSystems = map[string]string{
+			"ext4": "mkfs.ext4 -m0 %",
+		}
+	}
+
+	size, err := policy.CreateOptions.ActualSize()
+	if policy.Backends.CRUD != "" && (size == 0 || err != nil) {
+		api.RESTHTTPError(w, errored.Errorf("Size set to zero for non-empty CRUD backend %v", policy.Backends.CRUD).Combine(err))
 		return
 	}
 

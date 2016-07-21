@@ -2,6 +2,12 @@ package errors
 
 import "github.com/contiv/errored"
 
+// Validation errors
+var (
+	// JSONValidation is used whenever the policy or any json validation fails
+	JSONValidation = errored.New("JSON validation failed")
+)
+
 // service-level errors
 var (
 	// Unknown is for those times when we just. don't. know.

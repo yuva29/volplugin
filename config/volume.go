@@ -81,7 +81,7 @@ func (c *Client) PublishVolumeRuntime(vo *Volume, ro RuntimeOptions) error {
 // CreateVolume sets the appropriate config metadata for a volume creation
 // operation, and returns the Volume that was copied in.
 func (c *Client) CreateVolume(rc Request) (*Volume, error) {
-	resp, err := c.GetPolicy(rc.Policy)
+	resp, err := c.GetPolicy(rc.Policy) //Get policy retuns the validated result, so no need of validate here
 	if err != nil {
 		return nil, err
 	}
@@ -99,10 +99,6 @@ func (c *Client) CreateVolume(rc Request) (*Volume, error) {
 
 	if resp.DriverOptions == nil {
 		resp.DriverOptions = map[string]string{}
-	}
-
-	if err := resp.Validate(); err != nil {
-		return nil, err
 	}
 
 	vc := &Volume{

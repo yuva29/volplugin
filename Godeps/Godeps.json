@@ -163,6 +163,14 @@
 			"Rev": "09dda9d4b0d748c57c14048906d3d094a58ec0c9"
 		},
 		{
+			"ImportPath": "github.com/gima/govalid/v1",
+			"Rev": "c535894061717218f2b81c7c1aad110769d79bf7"
+		},
+		{
+			"ImportPath": "github.com/gima/govalid/v1/internal",
+			"Rev": "c535894061717218f2b81c7c1aad110769d79bf7"
+		},
+		{
 			"ImportPath": "github.com/gorilla/context",
 			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
 		},

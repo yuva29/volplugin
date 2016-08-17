@@ -1,4 +1,4 @@
-FROM ceph/rbd
+FROM yuva29/glusterfs
 
 COPY bin/apiserver /bin/apiserver
 COPY bin/volplugin /bin/volplugin

@@ -1,0 +1,15 @@
+{ 
+  "backends": {
+    "crud": "gluster",
+    "mount": "gluster",
+    "snapshot": "gluster"
+  },
+  "unlocked": true,
+  "driver": { 
+    "bricks": {
+      "mon0": "/brick"
+    }
+  },
+  "create": { },
+  "runtime": { }
+}

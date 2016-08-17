@@ -2,3 +2,5 @@
 
 - include: install_gluster.yml
   when: install_gluster
+
+- include: create_lv.yml

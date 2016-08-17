@@ -331,6 +331,10 @@ func nfsDriver() bool {
 	return getDriver() == "nfs"
 }
 
+func glusterDriver() bool {
+	return getDriver() == "gluster"
+}
+
 func (s *systemtestSuite) createExports() error {
 	out, err := s.mon0cmd("sudo mkdir -p /volplugin")
 	if err != nil {

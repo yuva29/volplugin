@@ -1,0 +1,16 @@
+{ 
+  "name": "nosnap",
+  "backends": {
+    "crud": "gluster",
+    "mount": "gluster",
+    "snapshot": "gluster"
+  },
+  "driver": {
+    "bricks": {
+      "mon0": "/brick"
+    }
+  },
+  "runtime": {
+    "snapshots": false
+  }
+}

@@ -389,7 +389,7 @@ func (s *systemtestSuite) TestVolCLIRemoveTimeout(c *C) {
 }
 
 func (s *systemtestSuite) TestVolCLIRuntime(c *C) {
-	if !cephDriver() {
+	if !cephDriver() && !glusterDriver() {
 		c.Skip("Only the ceph driver supports runtime parameters")
 		return
 	}

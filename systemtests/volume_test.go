@@ -68,7 +68,7 @@ func (s *systemtestSuite) TestVolumeMultiPolicyCreate(c *C) {
 }
 
 func (s *systemtestSuite) TestVolumeMultiCreateThroughDocker(c *C) {
-	if !cephDriver() {
+	if !cephDriver() && !glusterDriver() {
 		c.Skip("This is only supported by the ceph driver")
 		return
 	}

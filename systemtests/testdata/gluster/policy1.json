@@ -1,0 +1,23 @@
+{ 
+  "name": "test1",
+  "backends": {
+    "crud": "gluster",
+    "mount": "gluster",
+    "snapshot": "gluster"
+  },
+  "driver": {
+    "bricks": {
+      "mon1":"/brick"
+    }
+  },
+  "create": {
+    "size": "10MB"
+  },
+  "runtime": {
+    "snapshots": true,
+    "snapshot": {
+      "frequency": "30m",
+      "keep": 20
+    }
+  }
+}

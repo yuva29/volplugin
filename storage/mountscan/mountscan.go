@@ -14,6 +14,7 @@ const (
 	mountInfoFile           = "/proc/self/mountinfo"
 	deviceInfoFile          = "/proc/devices"
 	nfsMajorID              = 0
+	glusterfsMajorID        = 0
 	totalMountInfoFieldsNum = 10
 )
 
@@ -124,6 +125,8 @@ func getDriverMajorID(request *GetMountsRequest) (uint, error) {
 	switch request.DriverName {
 	case "nfs":
 		return nfsMajorID, nil
+	case "glusterfs":
+		return glusterfsMajorID, nil
 	default:
 		devID, err := getDevID(request.KernelDriver)
 		if err != nil {
@@ -139,9 +142,9 @@ func validateRequest(request *GetMountsRequest) error {
 	}
 
 	switch request.DriverName {
-	case "nfs":
+	case "nfs", "glusterfs":
 		if isEmpty(request.FsType) {
-			return errored.Errorf("Filesystem type is required for scanning NFS mounts")
+			return errored.Errorf("Filesystem type is required for scanning %q mounts", request.DriverName)
 		}
 	default:
 		if isEmpty(request.KernelDriver) {

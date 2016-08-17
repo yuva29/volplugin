@@ -1,0 +1,8 @@
+{
+	"backend": "gluster",
+	"driver": {
+    "bricks": {
+      "mon1":"/brick"
+    }
+	}
+}

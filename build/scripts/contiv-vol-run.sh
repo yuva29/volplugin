@@ -48,6 +48,10 @@ case "$1" in
         -v /lib/modules:/lib/modules:ro \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -v /mnt:/mnt:shared \
+        -v /etc/glusterfs:/etc/glusterfs \
+        -v /var/lib/glusterd:/var/lib/glusterd \
+        -v /var/log/glusterfs:/var/log/glusterfs \
+        -v /var/run/glusterd.socket:/var/run/glusterd.socket \
         ${registry}contiv/volplugin apiserver
     ;;
 
@@ -57,6 +61,10 @@ case "$1" in
         -v /lib/modules:/lib/modules:ro \
         -v /etc/ceph:/etc/ceph \
         -v /var/lib/ceph:/var/lib/ceph \
+        -v /etc/glusterfs:/etc/glusterfs \
+        -v /var/lib/glusterd:/var/lib/glusterd \
+        -v /var/log/glusterfs:/var/log/glusterfs \
+        -v /var/run/glusterd.socket:/var/run/glusterd.socket \
         ${registry}contiv/volplugin volsupervisor
     ;;
 
@@ -72,6 +80,10 @@ case "$1" in
         -v /var/lib/ceph:/var/lib/ceph \
         -v /var/run/ceph:/var/run/ceph \
         -v /sys/fs/cgroup:/sys/fs/cgroup \
+        -v /etc/glusterfs:/etc/glusterfs \
+        -v /var/lib/glusterd:/var/lib/glusterd \
+        -v /var/log/glusterfs:/var/log/glusterfs \
+        -v /var/run/glusterd.socket:/var/run/glusterd.socket \
         ${registry}contiv/volplugin volplugin
     ;;
 

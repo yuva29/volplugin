@@ -3,3 +3,10 @@ gluster_peers_group:
 gluster_interface:
 install_gluster: false
 gluster_device: ""
+gluster_vg: gfs_vg # volume group
+gluster_thin_volume: gfs_lv # logical volume
+gluster_device_metadata: gfs_meta_pool # meta data pool
+gluster_device_metadata_size: "1000MB" # meta data device size
+gluster_device_data: gfs_pool # data pool
+gluster_device_data_size: "10000MB" # data device size
+mountpoint: "/brick"

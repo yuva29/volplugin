@@ -1,0 +1,50 @@
+---
+
+- name: Create physical volume for GlusterFS
+  shell: "pvcreate --dataalignment 1280K  {{ gluster_device }}"
+  ignore_errors: True
+
+- name: Create volume group for GlusterFS
+  shell: "vgcreate --physicalextentsize 128K gfs_vg {{ gluster_device }}"
+  ignore_errors: True
+
+- name: Create an LV to serve as the metadata device
+  shell: "lvcreate -L {{ gluster_device_metadata_size }} --name {{ gluster_device_metadata }} {{ gluster_vg }}"
+  ignore_errors: True
+
+- name: Create an LV to serve as the data device
+  shell: "lvcreate -L {{ gluster_device_data_size }} --name {{ gluster_device_data }} {{ gluster_vg }}"
+  ignore_errors: True
+    
+- name: Create a thin pool from the data LV and the metadata LV
+  shell: "echo \"y\" | lvconvert --chunksize 1280K --thinpool {{ gluster_vg }}/{{ gluster_device_data }} --poolmetadata {{ gluster_vg }}/{{ gluster_device_metadata }}"
+  ignore_errors: True
+
+- name: Zero thin-pool to prevent leaks 
+  shell: "lvchange --zero n {{ gluster_vg }}/{{ gluster_device_data }}"
+  ignore_errors: True
+  
+- name: Create a thinly provisioned volume from the previously created pool
+  shell: "lvcreate -V 1G -T {{ gluster_vg }}/{{ gluster_device_data }} -n {{ gluster_thin_volume }}"
+  ignore_errors: True
+
+- name: Format bricks using XFS 
+  filesystem:
+    dev: "/dev/{{ gluster_vg }}/{{ gluster_thin_volume }}"
+    fstype: xfs
+    opts: "-f -i size=512"
+    #opts: "-i size=512 -n size=8192 -d su=128K,sw=10 -f"
+
+- name: Create a directory to link brick 
+  file:
+    name: "{{ mountpoint }}"
+    state: directory
+
+- name: Mount the brick 
+  mount:
+    fstype: xfs
+    src: "/dev/{{ gluster_vg }}/{{ gluster_thin_volume }}"
+    name: "{{ mountpoint }}"
+    opts: "rw,inode64,noatime,nouuid"
+    state: mounted
+

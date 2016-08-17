@@ -27,17 +27,17 @@ var (
 		"title": "Policy config validation",
 		"type": "object",
 		"properties": {
-			"name": {"type": "string", "minLength": 1, "pattern": "^[^./]+$" },
+			"name": {"type": "string", "minLength": 1, "pattern": "^[^./_]+$" },
 			"backends": {
 				"type": "object",
 				"properties": {
-					"mount": { "type": "string", "minLength": 1, "enum": [ "ceph", "nfs" ] },
-					"crud": { "type": "string", "enum": [ "ceph", "" ] },
-					"snapshot": { "type": "string", "enum": [ "ceph", "" ] }
+					"mount": { "type": "string", "minLength": 1, "enum": [ "ceph", "nfs", "gluster" ] },
+					"crud": { "type": "string", "enum": [ "ceph", "gluster", "" ] },
+					"snapshot": { "type": "string", "enum": [ "ceph", "gluster", "" ] }
 				},
 				"required": [ "mount" ]
 			}, 
-			"backend": { "enum": [ "ceph", "nfs" ] }
+			"backend": { "enum": [ "ceph", "nfs", "gluster" ] }
 		},
 		"anyOf": [
 			{ "required": [ "backend" ] },
@@ -51,14 +51,14 @@ var (
 		"title": "Volume config validation",
 		"type": "object",
 		"properties": {
-			"name": { "type": "string", "minLength": 1, "pattern": "^[^./]+$" },
-			"policy": { "type": "string", "minLength": 1, "pattern": "^[^./]+$" },
+			"name": { "type": "string", "minLength": 1, "pattern": "^[^./_]+$" },
+			"policy": { "type": "string", "minLength": 1, "pattern": "^[^./_]+$" },
 			"backends": {
 				"type": "object",
 				"properties": {
-					"mount": { "type": "string", "minLength": 1, "enum": [ "ceph", "nfs" ] },
-					"crud": { "type": "string", "enum": [ "ceph", "" ] },
-					"snapshot": { "type": "string", "enum": [ "ceph", "" ] }
+					"mount": { "type": "string", "minLength": 1, "enum": [ "ceph", "nfs", "gluster" ] },
+					"crud": { "type": "string", "enum": [ "ceph", "gluster", "" ] },
+					"snapshot": { "type": "string", "enum": [ "ceph", "gluster", "" ] }
 				},
 				"required": [ "mount" ]
 			}

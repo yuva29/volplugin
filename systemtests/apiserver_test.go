@@ -62,8 +62,8 @@ func (s *systemtestSuite) TestAPIServerGlobalConfigUpdate(c *C) {
 }
 
 func (s *systemtestSuite) TestAPIServerMultiRemove(c *C) {
-	if !cephDriver() {
-		c.Skip("Only ceph driver supports CRUD operations")
+	if !cephDriver() && !glusterDriver() {
+		c.Skip("Only ceph/gluster driver supports CRUD operations")
 		return
 	}
 
@@ -78,7 +78,8 @@ func (s *systemtestSuite) TestAPIServerMultiRemove(c *C) {
 
 	outChan := make(chan out, 5)
 
-	for i := 0; i < 5; i++ {
+	totalIterations := 5
+	for i := 0; i < totalIterations; i++ {
 		go func() {
 			myout, err := s.volcli("volume remove " + volName)
 			outChan <- out{myout, err}
@@ -87,7 +88,7 @@ func (s *systemtestSuite) TestAPIServerMultiRemove(c *C) {
 
 	errs := 0
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < totalIterations; i++ {
 		myout := <-outChan
 		if myout.err != nil {
 			if myout.out != "" {
@@ -97,6 +98,6 @@ func (s *systemtestSuite) TestAPIServerMultiRemove(c *C) {
 		}
 	}
 
-	c.Assert(errs, Equals, 4)
+	c.Assert(errs, Equals, totalIterations-1)
 	c.Assert(s.purgeVolume("mon0", volName), NotNil)
 }

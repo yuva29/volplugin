@@ -12,8 +12,9 @@ import (
 
 // Type definitions for backend drivers
 var defaultDrivers = map[string]*BackendDrivers{
-	"ceph": {"ceph", "ceph", "ceph"},
-	"nfs":  {"", "nfs", ""},
+	"ceph":    {"ceph", "ceph", "ceph"},
+	"nfs":     {"", "nfs", ""},
+	"gluster": {"gluster", "gluster", "gluster"},
 }
 
 // Policy is the configuration of the policy. It includes default
@@ -156,7 +157,7 @@ func (cfg *Policy) Validate() error {
 	}
 
 	size, err := cfg.CreateOptions.ActualSize()
-	if cfg.Backends.CRUD != "" && (size == 0 || err != nil) {
+	if cfg.Backends.CRUD == "ceph" && (size == 0 || err != nil) {
 		return errored.Errorf("Size set to zero for non-empty CRUD backend %v", cfg.Backends.CRUD).Combine(err)
 	}
 

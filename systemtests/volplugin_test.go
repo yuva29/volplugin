@@ -28,7 +28,7 @@ func (s *systemtestSuite) TestVolpluginNoGlobalConfiguration(c *C) {
 }
 
 func (s *systemtestSuite) TestVolpluginLockFreeOperation(c *C) {
-	if !nfsDriver() {
+	if !nfsDriver() && !glusterDriver() {
 		c.Skip("Cannot run this test on any driver but NFS")
 		return
 	}

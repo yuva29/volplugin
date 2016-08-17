@@ -56,6 +56,12 @@ func (s *systemtestSuite) BatteryMultiMountSameHost(c *C, isUnlocked string) {
 					mountedDirContent, err := s.mon0cmd(fmt.Sprintf("docker exec %s ls /mnt", strings.TrimSpace(containerID)))
 					c.Assert(err, IsNil)
 					c.Assert(strings.TrimSpace(mountedDirContent), Equals, "lost+found")
+				} else if glusterDriver() {
+					_, err = s.mon0cmd(fmt.Sprintf("mount | grep fuse.glusterfs | grep -q %s", strings.Join([]string{"policy1", volume}, "_")))
+					c.Assert(err, IsNil)
+					mountedDirContent, err := s.mon0cmd(fmt.Sprintf("docker exec %s ls /mnt", strings.TrimSpace(containerID)))
+					c.Assert(err, IsNil)
+					c.Assert(strings.TrimSpace(mountedDirContent), Equals, "")
 				}
 
 				dockerRmOut, err := s.mon0cmd(fmt.Sprintf("docker rm -f %s", strings.TrimSpace(containerID)))
@@ -72,6 +78,9 @@ func (s *systemtestSuite) BatteryMultiMountSameHost(c *C, isUnlocked string) {
 
 		if cephDriver() {
 			_, err := s.mon0cmd("mount | grep -q rbd")
+			c.Assert(err, NotNil)
+		} else if glusterDriver() {
+			_, err := s.mon0cmd("mount | grep -q fuse.glusterfs")
 			c.Assert(err, NotNil)
 		}
 
@@ -155,7 +164,6 @@ repeat:
 				errs++
 			}
 
-			//logrus.Infof("%q: %s", output.volume, output.out)
 		}
 
 		errCount := count * (len(nodes) - 1)
@@ -238,7 +246,7 @@ func (s *systemtestSuite) TestBatteryParallelCreate(c *C) {
 
 				if nfsDriver() {
 					c.Assert(errs, Equals, 0)
-				} else {
+				} else { // Ceph, Glustefs does not allow parallel volume creation across all the hosts in the cluster
 					c.Assert(errs, Equals, 2)
 				}
 			}(nodes, volume)
@@ -266,6 +274,10 @@ func (s *systemtestSuite) TestBatteryParallelCreate(c *C) {
 			out, err := s.mon0cmd("sudo rbd ls")
 			c.Assert(err, IsNil)
 			c.Assert(out, Equals, "")
+		} else if glusterDriver() {
+			out, err := s.mon0cmd("sudo gluster volume info")
+			c.Assert(err, IsNil)
+			c.Assert(strings.TrimSpace(out), Equals, "No volumes present")
 		}
 	}
 }

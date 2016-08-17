@@ -208,8 +208,8 @@ func (s *systemtestSuite) TestIntegratedRemoveWhileMount(c *C) {
 }
 
 func (s *systemtestSuite) TestIntegratedVolumeSnapshotCopy(c *C) {
-	if !cephDriver() {
-		c.Skip("Only ceph supports snapshots")
+	if !cephDriver() && !glusterDriver() {
+		c.Skip("Only ceph/gluster supports snapshots")
 		return
 	}
 
@@ -234,14 +234,16 @@ func (s *systemtestSuite) TestIntegratedVolumeSnapshotCopy(c *C) {
 	_, err = s.volcli(fmt.Sprintf("volume snapshot copy %s %s %s", fqVolName, lines[0], targetName))
 	c.Assert(err, IsNil)
 
-	defer func() {
-		s.purgeVolume("mon0", fqVolume("policy1", targetName2))
-		s.purgeVolume("mon0", fqVolume("policy1", targetName))
-		_, err := s.mon0cmd(fmt.Sprintf("sudo rbd snap unprotect policy1.%s --snap %s --pool rbd", volName, lines[0]))
-		c.Assert(err, IsNil)
-		s.clearContainers()
-		c.Assert(s.purgeVolume("mon0", fqVolName), IsNil)
-	}()
+	if cephDriver() {
+		defer func() {
+			s.purgeVolume("mon0", fqVolume("policy1", targetName2))
+			s.purgeVolume("mon0", fqVolume("policy1", targetName))
+			_, err := s.mon0cmd(fmt.Sprintf("sudo rbd snap unprotect policy1.%s --snap %s --pool rbd", volName, lines[0]))
+			c.Assert(err, IsNil)
+			s.clearContainers()
+			c.Assert(s.purgeVolume("mon0", fqVolName), IsNil)
+		}()
+	}
 
 	out, err = s.volcli("volume list-all")
 	c.Assert(err, IsNil)
@@ -277,8 +279,8 @@ func (s *systemtestSuite) TestIntegratedVolumeSnapshotCopy(c *C) {
 }
 
 func (s *systemtestSuite) TestIntegratedVolumeSnapshotCopyFailures(c *C) {
-	if !cephDriver() {
-		c.Skip("Only ceph supports snapshots")
+	if !cephDriver() && !glusterDriver() {
+		c.Skip("Only ceph/gluster supports snapshots")
 		return
 	}
 

@@ -1,0 +1,21 @@
+{
+  "name": "testdriver",
+  "backends": {
+    "crud": "ceph",
+    "mount": "ceph",
+    "snapshot": "ceph"
+  },
+  "driver": {
+    "pool": "rbd"
+  },
+  "create": {
+    "size": "10MB"
+  },
+  "runtime": {
+    "snapshots": true,
+    "snapshot": {
+      "frequency": "30m",
+      "keep": 20
+    }
+  }
+}

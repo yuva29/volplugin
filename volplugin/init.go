@@ -13,6 +13,7 @@ import (
 	"github.com/contiv/volplugin/lock"
 	"github.com/contiv/volplugin/storage"
 	"github.com/contiv/volplugin/storage/backend"
+	"github.com/contiv/volplugin/storage/backend/ceph"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 )
@@ -56,6 +57,9 @@ func (dc *DaemonConfig) getMounted() (map[string]*storage.Mount, map[string]int,
 	}
 
 	for driverName := range backend.MountDrivers {
+		if driverName == ceph.BackendName {
+			continue
+		}
 		cd, err := backend.NewMountDriver(driverName, dc.Global.MountPath)
 		if err != nil {
 			return nil, nil, err

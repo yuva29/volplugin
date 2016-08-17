@@ -21,6 +21,8 @@ SUBNET_PREFIX          = settings['subnet_prefix']
 SUBNET_ASSIGNMENT_DIR  = "/tmp/volplugin_vagrant_subnets/"
 SUBNET_ASSIGNMENT_FILE = File.expand_path(File.join(File.dirname(__FILE__), "subnet_assignment.state"))
 
+hosts = Hash.new # Captures all the hosts and their respective IPs
+
 class SubnetAssignmentFileError < Exception; end
 class NoAvailableSubnetsError < Exception; end
 
@@ -165,6 +167,12 @@ def create_vmdk(name, size)
   return path
 end
 
+
+# Pre-populate the hostnames and its IP
+(0..NMONS-1).each do |i|
+  hosts["mon#{i}"] = "#{SUBNET}.1#{i}"
+end
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = BOX
   config.vm.box_version = BOX_VERSION
@@ -224,6 +232,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
           # Run the provisioner after the last machine comes up
           override.vm.provision 'ansible', &ansible_provision if i == (NMONS - 1)
+
         end
       end
 
@@ -281,6 +290,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         override.vm.provision "shell" do |s|
           s.inline = shell_provision
           s.args = [ ENV["http_proxy"] || "", ENV["https_proxy"] || "" ]
+        end
+
+        hosts.each do |hostname, ip| # this happens only on the last node; mon2
+          config.vm.provision "shell" do |s|
+            s.inline = "if grep -q \"$1 $2\" /etc/hosts; then :; else echo \"$1 $2\" | sudo tee -a /etc/hosts; fi"
+            s.args = ["#{ip}", "#{hostname}"]
+          end
         end
 
         # Run the provisioner after the last machine comes up

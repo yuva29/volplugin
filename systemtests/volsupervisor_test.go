@@ -4,12 +4,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sirupsen/logrus"
+
 	. "gopkg.in/check.v1"
 )
 
 func (s *systemtestSuite) TestVolsupervisorSnapLockedVolume(c *C) {
-	if !cephDriver() {
-		c.Skip("Only ceph supports snapshots")
+	if !cephDriver() && !glusterDriver() {
+		c.Skip("Only ceph/gluster supports snapshots")
 		return
 	}
 
@@ -26,18 +28,26 @@ func (s *systemtestSuite) TestVolsupervisorSnapLockedVolume(c *C) {
 	for count := 0; count < 5; count++ {
 		time.Sleep(4 * time.Second) // buffer time
 
-		out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
-		c.Assert(err, IsNil)
+		count := 0
+		if cephDriver() {
+			out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
+			c.Assert(err, IsNil)
+			count = len(strings.Split(strings.TrimSpace(out), "\n"))
+			c.Assert(count >= prevCount, Equals, true, Commentf("%v", out))
+		} else if glusterDriver() {
+			out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo gluster snapshot list policy1_" + volName)
+			c.Assert(err, IsNil)
+			count = len(strings.Split(strings.TrimSpace(out), "\n"))
+			c.Assert(count >= prevCount, Equals, true, Commentf("%v", out))
+		}
 
-		count := len(strings.Split(strings.TrimSpace(out), "\n"))
-		c.Assert(count >= prevCount, Equals, true, Commentf("%v", out))
 		prevCount = count
 	}
 }
 
 func (s *systemtestSuite) TestVolsupervisorSnapshotSchedule(c *C) {
-	if !cephDriver() {
-		c.Skip("Only ceph supports snapshots")
+	if !cephDriver() && !glusterDriver() {
+		c.Skip("Only ceph/gluster supports snapshots")
 		return
 	}
 
@@ -50,23 +60,40 @@ func (s *systemtestSuite) TestVolsupervisorSnapshotSchedule(c *C) {
 
 	time.Sleep(6 * time.Second)
 
-	out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
-	c.Assert(err, IsNil)
-	c.Assert(len(strings.Split(strings.TrimSpace(out), "\n"))-1 >= 2, Equals, true)
+	if cephDriver() {
+		out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
+		c.Assert(err, IsNil)
+		c.Assert(len(strings.Split(strings.TrimSpace(out), "\n"))-1 >= 2, Equals, true)
+	} else if glusterDriver() {
+		out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo gluster snapshot list policy1_" + volName)
+		c.Assert(err, IsNil)
+		logrus.Infof("%#v", out)
+		logrus.Infof("%v", len(strings.Split(strings.TrimSpace(out), "\n")))
+		c.Assert(len(strings.Split(strings.TrimSpace(out), "\n")) >= 2, Equals, true)
 
+	}
 	time.Sleep(15 * time.Second)
 
-	out, err = s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
-	c.Assert(err, IsNil)
-	mylen := len(strings.Split(strings.TrimSpace(out), "\n"))
-	c.Assert(mylen-1, Not(Equals), 0)
-	// this is 11 because in rare cases, the snapshot pruner will have not run yet when this is counted.
-	c.Assert(mylen-1 >= 5 && mylen-1 <= 11, Equals, true, Commentf("len: %d\n%v", mylen, out))
+	if cephDriver() {
+		out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
+		c.Assert(err, IsNil)
+		mylen := len(strings.Split(strings.TrimSpace(out), "\n"))
+		c.Assert(mylen, Not(Equals), 0)
+		// this is 11 because in rare cases, the snapshot pruner will have not run yet when this is counted.
+		c.Assert(mylen >= 5 && mylen <= 11, Equals, true, Commentf("len: %d\n%v", mylen, out))
+	} else if glusterDriver() {
+		out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo gluster snapshot list policy1_" + volName)
+		c.Assert(err, IsNil)
+		mylen := len(strings.Split(strings.TrimSpace(out), "\n")) - 1
+		c.Assert(mylen, Not(Equals), 0)
+		c.Assert(mylen >= 5 && mylen <= 11, Equals, true, Commentf("len: %d\n%v", mylen, out))
+	}
+
 }
 
 func (s *systemtestSuite) TestVolsupervisorStopStartSnapshot(c *C) {
-	if !cephDriver() {
-		c.Skip("Only ceph supports snapshots")
+	if !cephDriver() && !glusterDriver() {
+		c.Skip("Only ceph/gluster supports snapshots")
 		return
 	}
 
@@ -80,15 +107,27 @@ func (s *systemtestSuite) TestVolsupervisorStopStartSnapshot(c *C) {
 
 	time.Sleep(6 * time.Second)
 
-	out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
-	c.Assert(err, IsNil)
-	c.Assert(len(strings.Split(out, "\n")) > 2, Equals, true)
+	if cephDriver() {
+		out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
+		c.Assert(err, IsNil)
+		c.Assert(len(strings.Split(out, "\n")) > 2, Equals, true)
+	} else if glusterDriver() {
+		out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo gluster snapshot list policy1_" + volName)
+		c.Assert(err, IsNil)
+		c.Assert(len(strings.Split(out, "\n")) > 2, Equals, true)
+	}
 
-	out, err = s.volcli("volume remove " + fqVolName)
+	out, err := s.volcli("volume remove " + fqVolName)
 	c.Assert(err, IsNil, Commentf(out))
 
-	_, err = s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
-	c.Assert(err, NotNil)
+	if cephDriver() {
+		_, err = s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
+		c.Assert(err, NotNil)
+	} else if glusterDriver() {
+		out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo gluster snapshot list policy1_" + volName)
+		logrus.Infof("%v", out)
+		c.Assert(err, IsNil)
+	}
 
 	_, err = s.uploadIntent("policy1", "nosnap")
 	c.Assert(err, IsNil)
@@ -100,18 +139,26 @@ func (s *systemtestSuite) TestVolsupervisorStopStartSnapshot(c *C) {
 
 	time.Sleep(6 * time.Second)
 
-	out, err = s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
-	c.Assert(err, IsNil)
-	c.Assert(len(out), Equals, 0)
+	if cephDriver() {
+		out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
+		c.Assert(err, IsNil)
+		c.Assert(len(out), Equals, 0)
+	} else if glusterDriver() {
+		out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo gluster snapshot list policy1_" + volName)
+		c.Assert(err, IsNil)
+		c.Assert(len(out), Equals, 0)
+	}
+
 }
 
 func (s *systemtestSuite) TestVolsupervisorRestart(c *C) {
-	if !cephDriver() {
-		c.Skip("Only ceph supports snapshots")
+	if !cephDriver() && !glusterDriver() {
+		c.Skip("Only ceph/gluster supports snapshots")
 		return
 	}
 
-	_, err := s.uploadIntent("policy1", "fastsnap")
+	var err error
+	_, err = s.uploadIntent("policy1", "fastsnap")
 	c.Assert(err, IsNil)
 
 	volName := genRandomVolume()
@@ -120,9 +167,16 @@ func (s *systemtestSuite) TestVolsupervisorRestart(c *C) {
 
 	time.Sleep(30 * time.Second)
 
-	out, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
-	c.Assert(err, IsNil)
-	c.Assert(strings.Count(out, "\n") > 1, Equals, true, Commentf("%v", out))
+	var out string
+	if cephDriver() {
+		out, err = s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
+		c.Assert(err, IsNil)
+		c.Assert(strings.Count(out, "\n") > 1, Equals, true, Commentf("%v", out))
+	} else if glusterDriver() {
+		out, err = s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo gluster snapshot list policy1_" + volName)
+		c.Assert(err, IsNil)
+		c.Assert(strings.Count(out, "\n") > 1, Equals, true, Commentf("%v", out))
+	}
 
 	c.Assert(stopVolsupervisor(s.vagrant.GetNode("mon0")), IsNil)
 	c.Assert(startVolsupervisor(s.vagrant.GetNode("mon0")), IsNil)
@@ -130,15 +184,21 @@ func (s *systemtestSuite) TestVolsupervisorRestart(c *C) {
 
 	time.Sleep(time.Minute)
 
-	out2, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
-	c.Assert(err, IsNil)
+	if cephDriver() {
+		out2, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo rbd snap ls policy1." + volName)
+		c.Assert(err, IsNil)
+		c.Assert(out, Not(Equals), out2)
+	} else if glusterDriver() {
+		out2, err := s.vagrant.GetNode("mon0").RunCommandWithOutput("sudo gluster snapshot list policy1_" + volName)
+		c.Assert(err, IsNil)
+		c.Assert(out, Not(Equals), out2)
+	}
 
-	c.Assert(out, Not(Equals), out2)
 }
 
 func (s *systemtestSuite) TestVolsupervisorSignal(c *C) {
-	if !cephDriver() {
-		c.Skip("Only ceph supports snapshots")
+	if !cephDriver() && !glusterDriver() {
+		c.Skip("Only ceph/gluster supports snapshots")
 		return
 	}
 
